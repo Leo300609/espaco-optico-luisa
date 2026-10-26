@@ -1,0 +1,247 @@
+@import "tailwindcss";
+
+/* Paleta medida na logo (azul #343A55) — capítulo 4.2 */
+@theme {
+  --color-marca: #343a55;
+  --color-marca-escuro: #232840;
+  --color-marca-claro: #4b5378;
+  --color-gelo: #f6f7fa;
+  --color-contorno: #d9dde7;
+  --color-campo: #8a91a8;
+  --color-texto: #1f2433;
+  --color-suave: #4f566b;
+  --color-champanhe: #d8be8c;
+  --color-promo: #b3382c;
+  --color-sucesso: #2e7d5b;
+  --color-alerta: #8a5a00;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-cormorant), Georgia, serif;
+  --font-script: var(--font-script-luisa), cursive;
+
+  --radius-cartao: 14px;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #ffffff;
+  color: var(--color-texto);
+  font-family: var(--font-sans);
+  font-size: 1.0625rem; /* 17px */
+  line-height: 1.55;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif);
+  color: var(--color-marca-escuro);
+  line-height: 1.15;
+  font-weight: 600;
+}
+
+/* Foco sempre visível e grosso (WCAG 2.4.7) */
+:focus-visible {
+  outline: 3px solid var(--color-marca);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.sobre-escuro :focus-visible {
+  outline-color: var(--color-champanhe);
+}
+
+/* Pular para o conteúdo */
+.pular-conteudo {
+  position: absolute;
+  left: -9999px;
+  top: 0.5rem;
+  z-index: 100;
+  background: var(--color-marca);
+  color: #fff;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+}
+.pular-conteudo:focus {
+  left: 0.5rem;
+}
+
+/* Componentes base */
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 48px;
+    padding: 0 1.4rem;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+    cursor: pointer;
+  }
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  .btn-primario {
+    background: var(--color-marca);
+    color: #fff;
+  }
+  .btn-primario:hover:not(:disabled) {
+    background: var(--color-marca-escuro);
+  }
+  .btn-secundario {
+    background: #fff;
+    color: var(--color-marca);
+    border: 2px solid var(--color-marca);
+  }
+  .btn-secundario:hover:not(:disabled) {
+    background: var(--color-gelo);
+  }
+  .btn-perigo {
+    background: #fff;
+    color: var(--color-promo);
+    border: 2px solid var(--color-promo);
+  }
+  .btn-pequeno {
+    min-height: 40px;
+    padding: 0 0.9rem;
+    font-size: 0.95rem;
+  }
+
+  .campo {
+    width: 100%;
+    min-height: 48px;
+    padding: 0.6rem 0.85rem;
+    border: 1.5px solid var(--color-campo);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--color-texto);
+  }
+  .campo:focus-visible {
+    border-color: var(--color-marca);
+  }
+  .campo[aria-invalid="true"] {
+    border-color: var(--color-promo);
+  }
+  textarea.campo {
+    min-height: 120px;
+  }
+  .rotulo {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+  }
+  .ajuda {
+    font-size: 0.92rem;
+    color: var(--color-suave);
+    margin-top: 0.3rem;
+  }
+  .erro {
+    font-size: 0.95rem;
+    color: var(--color-promo);
+    margin-top: 0.3rem;
+  }
+
+  .cartao {
+    background: #fff;
+    border: 1px solid var(--color-contorno);
+    border-radius: var(--radius-cartao);
+  }
+
+  .selo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+  }
+
+  .conteudo {
+    width: 100%;
+    max-width: 1200px;
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+  @media (min-width: 768px) {
+    .conteudo {
+      padding-inline: 1.5rem;
+    }
+  }
+
+  .texto-longo p {
+    margin-bottom: 1rem;
+    max-width: 70ch;
+  }
+  .texto-longo h2 {
+    font-size: 1.6rem;
+    margin: 2rem 0 0.75rem;
+  }
+  .texto-longo ul {
+    list-style: disc;
+    padding-left: 1.4rem;
+    margin-bottom: 1rem;
+  }
+
+  .tabela {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+  .tabela th,
+  .tabela td {
+    text-align: left;
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid var(--color-contorno);
+    vertical-align: top;
+  }
+  .tabela th {
+    background: var(--color-gelo);
+    font-weight: 600;
+  }
+}
+
+/* Cartão de produto: sobe levemente e mostra a 2ª foto */
+.cartao-produto {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+.cartao-produto:hover,
+.cartao-produto:focus-within {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgb(35 40 64 / 0.12);
+}
+.cartao-produto .foto-2 {
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+.cartao-produto:hover .foto-2 {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .cartao-produto:hover {
+    transform: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .btn {
+    border: 2px solid ButtonText;
+  }
+}

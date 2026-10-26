@@ -1,0 +1,625 @@
+// Modelo de dados do e-commerce Espaço Óptico Luísa
+// Valores em dinheiro sempre em centavos (Int). Ver capítulo 5 da documentação.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+// ---------- Usuários, sessões e segurança ----------
+
+enum Role {
+  CLIENTE
+  PROPRIETARIO
+  GERENTE
+  ATENDENTE
+  OPTICO
+}
+
+enum UserStatus {
+  ATIVO
+  BLOQUEADO
+  ANONIMIZADO
+}
+
+model User {
+  id               String     @id @default(cuid())
+  name             String
+  email            String     @unique
+  phone            String?
+  cpfEnc           String?    // CPF criptografado (AES-256-GCM)
+  birthDate        DateTime?
+  passwordHash     String
+  role             Role       @default(CLIENTE)
+  status           UserStatus @default(ATIVO)
+  totpSecretEnc    String?    // segredo do 2FA, criptografado
+  totpEnabled      Boolean    @default(false)
+  recoveryCodes    String[]   // resumos (hash) dos códigos de recuperação
+  failedLogins     Int        @default(0)
+  lockedUntil      DateTime?
+  marketingOptIn   Boolean    @default(false)
+  marketingOptInAt DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  lastLoginAt      DateTime?
+
+  sessions       Session[]
+  addresses      Address[]
+  orders         Order[]
+  prescriptions  Prescription[] @relation("RxOwner")
+  consents       Consent[]
+  auditLogs      AuditLog[]
+  dataRequests   DataRequest[]
+  favorites      Favorite[]
+  reviewedRx     Prescription[] @relation("RxReviewer")
+}
+
+model Session {
+  id           String   @id // resumo SHA-256 do token; o token em si só existe no cookie
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isAdmin      Boolean  @default(false)
+  mfaVerified  Boolean  @default(false)
+  expiresAt    DateTime
+  lastSeenAt   DateTime @default(now())
+  ip           String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+}
+
+model RateLimit {
+  key     String   @id
+  count   Int
+  resetAt DateTime
+}
+
+// ---------- Catálogo ----------
+
+enum ProductType {
+  ARMACAO
+  OCULOS_SOL
+  LENTE_CONTATO
+  LENTE_GRAU
+  ACESSORIO
+}
+
+enum RxRequirement {
+  NAO
+  SIM
+  OPCIONAL
+}
+
+enum ProductStatus {
+  RASCUNHO
+  ATIVO
+  OCULTO
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  parentId    String?
+  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryTree")
+  position    Int        @default(0)
+  imageUrl    String?
+  seoTitle    String?
+  seoDesc     String?
+  active      Boolean    @default(true)
+  products    Product[]
+}
+
+model Product {
+  id             String        @id @default(cuid())
+  sku            String        @unique
+  name           String
+  slug           String        @unique
+  description    String
+  brand          String
+  categoryId     String
+  category       Category      @relation(fields: [categoryId], references: [id])
+  type           ProductType
+  requiresRx     RxRequirement @default(NAO)
+  acceptsLenses  Boolean       @default(false)
+  priceCents     Int
+  promoCents     Int?
+  promoStart     DateTime?
+  promoEnd       DateTime?
+  weightGrams    Int           @default(200)
+  attributes     Json          @default("{}") // formato, material, gênero, medidas...
+  gender         String?
+  frameShape     String?
+  material       String?
+  seoTitle       String?
+  seoDesc        String?
+  status         ProductStatus @default(RASCUNHO)
+  featured       Boolean       @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  variants   Variant[]
+  images     ProductImage[]
+  orderItems OrderItem[]
+  favorites  Favorite[]
+
+  @@index([categoryId, status])
+  @@index([brand])
+}
+
+model Variant {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku         String   @unique
+  color       String?
+  size        String?
+  priceCents  Int?
+  stock       Int      @default(0)
+  reserved    Int      @default(0)
+  minStock    Int      @default(1)
+  barcode     String?
+  active      Boolean  @default(true)
+
+  movements StockMovement[]
+  cartItems CartItem[]
+  orderItems OrderItem[]
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  alt       String
+  position  Int     @default(0)
+}
+
+enum StockMovementType {
+  ENTRADA
+  VENDA_ONLINE
+  VENDA_LOJA
+  RESERVA
+  LIBERACAO_RESERVA
+  PERDA
+  CORRECAO
+  DEVOLUCAO
+}
+
+model StockMovement {
+  id        String            @id @default(cuid())
+  variantId String
+  variant   Variant           @relation(fields: [variantId], references: [id])
+  type      StockMovementType
+  quantity  Int
+  orderId   String?
+  reason    String?
+  userId    String?
+  createdAt DateTime          @default(now())
+
+  @@index([variantId, createdAt])
+}
+
+enum LensKind {
+  VISAO_SIMPLES
+  MULTIFOCAL
+  BIFOCAL
+  OCUPACIONAL
+}
+
+model LensOption {
+  id             String   @id @default(cuid())
+  kind           LensKind
+  name           String
+  refractiveIdx  String   // "1.50", "1.67"...
+  description    String?
+  priceCents     Int
+  minSphere      Float    @default(-8)
+  maxSphere      Float    @default(6)
+  maxCylinder    Float    @default(4)
+  productionDays Int      @default(7)
+  active         Boolean  @default(true)
+  position       Int      @default(0)
+}
+
+model Treatment {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  priceCents  Int
+  active      Boolean @default(true)
+  position    Int     @default(0)
+}
+
+model Favorite {
+  userId    String
+  productId String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([userId, productId])
+}
+
+// ---------- Carrinho ----------
+
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String?
+  couponCode String?
+  items     CartItem[]
+  expiresAt DateTime
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id         String  @id @default(cuid())
+  cartId     String
+  cart       Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variantId  String
+  variant    Variant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  quantity   Int
+  lensConfig Json?   // { lensOptionId, treatmentIds[] }
+}
+
+// ---------- Receitas ----------
+
+enum RxStatus {
+  RECEBIDA
+  EM_ANALISE
+  APROVADA
+  PENDENTE_CORRECAO
+  RECUSADA
+}
+
+model Prescription {
+  id            String    @id @default(cuid())
+  userId        String?
+  user          User?     @relation("RxOwner", fields: [userId], references: [id])
+  dataEnc       String?   // graus OD/OE, DNP, adição, altura, prisma: JSON criptografado
+  fileKeys      String[]  // chaves dos arquivos privados (criptografados)
+  issuedAt      DateTime?
+  doctorName    String?
+  doctorReg     String?
+  customerNotes String?
+  sendLater     Boolean   @default(false)
+  status        RxStatus  @default(RECEBIDA)
+  reason        String?
+  reviewedById  String?
+  reviewedBy    User?     @relation("RxReviewer", fields: [reviewedById], references: [id])
+  reviewedAt    DateTime?
+  consentId     String?
+  deleteAfter   DateTime
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  orders  Order[]
+  views   RxAccessLog[]
+}
+
+model RxAccessLog {
+  id             String       @id @default(cuid())
+  prescriptionId String
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  userId         String
+  action         String
+  createdAt      DateTime     @default(now())
+}
+
+// ---------- Pedidos e pagamentos ----------
+
+enum OrderStatus {
+  AGUARDANDO_PAGAMENTO
+  PAGAMENTO_CONFIRMADO
+  AGUARDANDO_RECEITA
+  RECEITA_EM_ANALISE
+  RECEITA_PENDENTE
+  EM_PRODUCAO
+  SEPARANDO
+  PRONTO_RETIRADA
+  EM_ROTA
+  ENTREGUE
+  RETIRADO
+  CANCELADO
+  REEMBOLSADO
+}
+
+enum Fulfillment {
+  ENTREGA
+  RETIRADA
+}
+
+enum PaymentMethod {
+  PIX
+  CARTAO
+}
+
+model Order {
+  id              String        @id @default(cuid())
+  number          Int           @unique @default(autoincrement())
+  publicToken     String        @unique // token para o cliente visitante acompanhar o pedido
+  userId          String?
+  user            User?         @relation(fields: [userId], references: [id])
+  customerName    String
+  customerEmail   String
+  customerPhone   String
+  customerCpfEnc  String?
+  status          OrderStatus   @default(AGUARDANDO_PAGAMENTO)
+  fulfillment     Fulfillment
+  address         Json?         // cópia do endereço no momento da compra
+  shippingZoneId  String?
+  subtotalCents   Int
+  discountCents   Int           @default(0)
+  shippingCents   Int           @default(0)
+  totalCents      Int
+  couponId        String?
+  coupon          Coupon?       @relation(fields: [couponId], references: [id])
+  paymentMethod   PaymentMethod
+  pickupCode      String?
+  prescriptionId  String?
+  prescription    Prescription? @relation(fields: [prescriptionId], references: [id])
+  customerNotes   String?
+  internalNotes   String?
+  paidAt          DateTime?
+  expiresAt       DateTime?
+  cancelledAt     DateTime?
+  cancelReason    String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  items    OrderItem[]
+  payments Payment[]
+  history  OrderEvent[]
+  couponUses CouponUse[]
+
+  @@index([status, createdAt])
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  variantId   String
+  variant     Variant  @relation(fields: [variantId], references: [id])
+  name        String
+  variantName String?
+  unitCents   Int
+  quantity    Int
+  lensConfig  Json?    // cópia: lente, tratamentos e preços
+  needsRx     Boolean  @default(false)
+}
+
+model OrderEvent {
+  id        String      @id @default(cuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    OrderStatus
+  note      String?
+  userId    String?
+  createdAt DateTime    @default(now())
+}
+
+enum PaymentStatus {
+  PENDENTE
+  APROVADO
+  RECUSADO
+  EXPIRADO
+  ESTORNADO
+  ESTORNADO_PARCIAL
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  orderId       String
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider      String
+  externalId    String?
+  method        PaymentMethod
+  status        PaymentStatus @default(PENDENTE)
+  amountCents   Int
+  installments  Int           @default(1)
+  cardBrand     String?
+  cardLast4     String?
+  pixCode       String?
+  pixQrBase64   String?
+  checkoutUrl   String?
+  expiresAt     DateTime?
+  refundedCents Int           @default(0)
+  refundReason  String?
+  approvedAt    DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([externalId])
+}
+
+model WebhookEvent {
+  id         String   @id // id do evento/notificação recebida (idempotência)
+  provider   String
+  receivedAt DateTime @default(now())
+}
+
+// ---------- Promoções, frete e conteúdo ----------
+
+enum CouponType {
+  PERCENTUAL
+  VALOR_FIXO
+  FRETE_GRATIS
+}
+
+model Coupon {
+  id              String     @id @default(cuid())
+  code            String     @unique
+  type            CouponType
+  value           Int        // percentual (0-100) ou centavos
+  minOrderCents   Int        @default(0)
+  startsAt        DateTime?
+  endsAt          DateTime?
+  maxUses         Int?
+  maxUsesPerUser  Int?       @default(1)
+  firstOrderOnly  Boolean    @default(false)
+  combineWithPromo Boolean   @default(true)
+  categoryIds     String[]
+  active          Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+
+  uses   CouponUse[]
+  orders Order[]
+}
+
+model CouponUse {
+  id            String   @id @default(cuid())
+  couponId      String
+  coupon        Coupon   @relation(fields: [couponId], references: [id])
+  orderId       String
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customerEmail String
+  amountCents   Int
+  createdAt     DateTime @default(now())
+}
+
+model ShippingZone {
+  id               String   @id @default(cuid())
+  name             String
+  cepStart         String   // 8 dígitos
+  cepEnd           String
+  priceCents       Int
+  days             Int
+  freeAboveCents   Int?
+  active           Boolean  @default(true)
+}
+
+model Address {
+  id         String  @id @default(cuid())
+  userId     String
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label      String?
+  cep        String
+  street     String
+  number     String
+  complement String?
+  district   String
+  city       String
+  state      String
+  reference  String?
+  isDefault  Boolean @default(false)
+}
+
+model Banner {
+  id          String    @id @default(cuid())
+  title       String
+  subtitle    String?
+  imageUrl    String?
+  ctaLabel    String?
+  ctaHref     String?
+  position    Int       @default(0)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  active      Boolean   @default(true)
+}
+
+model Page {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  content     String   // texto simples com parágrafos e "## " para subtítulos
+  version     Int      @default(1)
+  published   Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String
+  message   String
+  consent   Boolean
+  handled   Boolean  @default(false)
+  notes     String?
+  createdAt DateTime @default(now())
+}
+
+model StockAlertSubscription {
+  id        String   @id @default(cuid())
+  variantId String
+  email     String
+  notified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([variantId, email])
+}
+
+// ---------- LGPD e auditoria ----------
+
+enum ConsentType {
+  TERMOS
+  PRIVACIDADE
+  DADO_SAUDE
+  COMUNICACOES
+  COOKIES
+}
+
+model Consent {
+  id          String      @id @default(cuid())
+  userId      String?
+  user        User?       @relation(fields: [userId], references: [id])
+  email       String?
+  type        ConsentType
+  textVersion String
+  granted     Boolean     @default(true)
+  channel     String      @default("site")
+  ip          String?
+  createdAt   DateTime    @default(now())
+  revokedAt   DateTime?
+}
+
+enum DataRequestType {
+  ACESSO
+  CORRECAO
+  EXCLUSAO
+  PORTABILIDADE
+  REVOGACAO
+}
+
+model DataRequest {
+  id         String          @id @default(cuid())
+  userId     String
+  user       User            @relation(fields: [userId], references: [id])
+  type       DataRequestType
+  details    String?
+  status     String          @default("ABERTA")
+  resolvedAt DateTime?
+  createdAt  DateTime        @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  summary   String?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model Setting {
+  key   String @id
+  value Json
+}

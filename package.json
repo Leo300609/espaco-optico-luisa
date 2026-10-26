@@ -1,0 +1,48 @@
+{
+  "name": "espaco-optico-luisa",
+  "version": "0.1.0",
+  "private": true,
+  "description": "E-commerce da ótica Espaço Óptico Luísa (Suzano/SP)",
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "postinstall": "prisma generate"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.6.0",
+    "@vercel/blob": "^1.0.0",
+    "bcryptjs": "^3.0.2",
+    "next": "^15.3.0",
+    "otplib": "^12.0.1",
+    "qrcode": "^1.5.4",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "server-only": "^0.0.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.0",
+    "@types/node": "^22.14.0",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "prisma": "^6.6.0",
+    "tailwindcss": "^4.1.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
