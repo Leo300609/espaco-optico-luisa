@@ -14,10 +14,10 @@ const cormorant = Cormorant_Garamond({
 });
 const script = Great_Vibes({ subsets: ["latin"], weight: "400", variable: "--font-script-luisa", display: "swap" });
 
-const appUrl = appUrl();
+const siteUrl = appUrl();
 
 export const metadata: Metadata = {
-  metadataBase: new URL(appUrl),
+  metadataBase: new URL(siteUrl),
   title: {
     default: `${STORE.name} — Ótica em Suzano | Óculos de grau, de sol e lentes`,
     template: `%s | ${STORE.name} — Ótica em Suzano`,
