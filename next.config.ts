@@ -20,8 +20,6 @@ const config: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   eslint: { ignoreDuringBuilds: true },
-  // Temporário: a verificação de tipos roda antes (script build) e lista todos os erros de uma vez.
-  typescript: { ignoreBuildErrors: true },
   experimental: {
     serverActions: { bodySizeLimit: "12mb" }, // fotos de receita até 10 MB
   },

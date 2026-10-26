@@ -5,7 +5,7 @@
   "description": "E-commerce da ótica Espaço Óptico Luísa (Suzano/SP)",
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && (tsc --noEmit --pretty false || echo VERIFICACAO_DE_TIPOS_COM_ERROS) && next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
