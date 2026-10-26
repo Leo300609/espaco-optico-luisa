@@ -60,7 +60,7 @@ export default async function HomePage() {
               <img src={hero.imageUrl} alt="" className="w-full h-full object-cover rounded-[2rem]" />
             ) : (
               <div className="w-full h-full rounded-full bg-marca grid place-items-center shadow-xl">
-                <Image src="/logo.png" alt={`Logo ${STORE.name}`} width={360} height={360} className="rounded-full w-[88%] h-auto" priority />
+                <Image src="/logo.jpg" alt={`Logo ${STORE.name}`} width={360} height={360} className="rounded-full w-[88%] h-auto" priority />
               </div>
             )}
           </div>

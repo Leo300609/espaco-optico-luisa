@@ -18,7 +18,7 @@ export default async function SobrePage() {
     "@context": "https://schema.org",
     "@type": "Optician",
     name: STORE.name,
-    image: `${appUrl}/logo.png`,
+    image: `${appUrl}/logo.jpg`,
     url: appUrl,
     telephone: "+55-11-4759-3608",
     address: { "@type": "PostalAddress", streetAddress: a.street, addressLocality: a.city, addressRegion: a.state, postalCode: a.cep, addressCountry: "BR" },
@@ -61,7 +61,7 @@ export default async function SobrePage() {
         </div>
 
         <aside className="cartao p-6 space-y-4" aria-label="Contato e endereço">
-          <Image src="/logo.png" alt={`Logo ${STORE.name}`} width={200} height={200} className="rounded-full mx-auto" />
+          <Image src="/logo.jpg" alt={`Logo ${STORE.name}`} width={200} height={200} className="rounded-full mx-auto" />
           <p className="flex gap-2"><IconPin className="w-5 h-5 mt-1 shrink-0" />{fullAddress()}</p>
           <p className="flex gap-2"><IconPhone className="w-5 h-5 mt-1 shrink-0" /><a href={STORE.phoneHref} className="underline">{STORE.phone}</a></p>
           <ul className="space-y-1">

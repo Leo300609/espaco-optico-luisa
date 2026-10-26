@@ -33,7 +33,7 @@ export default async function PainelLayout({ children }: { children: React.React
       <a href="#conteudo" className="pular-conteudo">Pular para o conteúdo</a>
       <aside className="bg-marca text-white sobre-escuro md:min-h-screen">
         <div className="p-4 flex items-center gap-3 border-b border-white/15">
-          <Image src="/logo.png" alt="" width={44} height={44} className="rounded-full" />
+          <Image src="/logo.jpg" alt="" width={44} height={44} className="rounded-full" />
           <p className="leading-tight">
             <span className="block font-serif">Óptico Luísa</span>
             <span className="block text-xs text-white/75">Painel</span>

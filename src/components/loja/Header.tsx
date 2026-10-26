@@ -32,7 +32,7 @@ export async function Header() {
       <div className="conteudo flex items-center gap-3 py-3">
         <MobileMenu items={NAV} />
         <Link href="/" className="flex items-center gap-3 shrink-0" aria-label={`${STORE.name} — página inicial`}>
-          <Image src="/logo.png" alt="" width={52} height={52} className="rounded-full" priority />
+          <Image src="/logo.jpg" alt="" width={52} height={52} className="rounded-full" priority />
           <span className="hidden sm:flex flex-col leading-none">
             <span className="font-serif text-[0.95rem] tracking-wide text-suave">Espaço Óptico</span>
             <span className="font-script text-3xl text-marca -mt-0.5">Luísa</span>

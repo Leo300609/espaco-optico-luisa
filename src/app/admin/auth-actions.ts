@@ -1,6 +1,6 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import QRCode from "qrcode";
 import { db } from "@/lib/db";
 import { createSession, destroySession, getAdminSession, getClientIp, isStaff, markMfaVerified } from "@/lib/session";
@@ -15,7 +15,7 @@ export type AdminAuthState = { error?: string } | null;
 
 const LOCK_AFTER = 5;
 
-export async function adminSignIn(_: AdminAuthState, form: FormData): Promise<AdminAuthState> {
+async function adminSignInImpl(_: AdminAuthState, form: FormData): Promise<AdminAuthState> {
   const ip = await getClientIp();
   const email = String(form.get("email") ?? "").trim().toLowerCase();
   const password = String(form.get("password") ?? "");
@@ -52,7 +52,7 @@ export async function adminSignIn(_: AdminAuthState, form: FormData): Promise<Ad
   redirect(user.totpEnabled ? "/admin/2fa" : "/admin/2fa/configurar");
 }
 
-export async function verifySecondFactor(_: AdminAuthState, form: FormData): Promise<AdminAuthState> {
+async function verifySecondFactorImpl(_: AdminAuthState, form: FormData): Promise<AdminAuthState> {
   const session = await getAdminSession();
   if (!session) redirect("/admin/login");
   const user = session.user;
@@ -120,4 +120,26 @@ export async function adminSignOut() {
   if (s) await audit(s.user.id, "logout", "usuario", s.user.id);
   await destroySession(true);
   redirect("/admin/login");
+}
+
+/** Envolve o login para registrar falhas inesperadas nos logs (sem dados sensíveis). */
+export async function adminSignIn(prev: AdminAuthState, form: FormData): Promise<AdminAuthState> {
+  try {
+    return await adminSignInImpl(prev, form);
+  } catch (e) {
+    unstable_rethrow(e);
+    console.error("[login-painel] falha inesperada:", e instanceof Error ? `${e.name}: ${e.message}` : e);
+    return { error: "Não foi possível entrar agora (erro interno). Tente novamente em instantes." };
+  }
+}
+
+/** Envolve o login para registrar falhas inesperadas nos logs (sem dados sensíveis). */
+export async function verifySecondFactor(prev: AdminAuthState, form: FormData): Promise<AdminAuthState> {
+  try {
+    return await verifySecondFactorImpl(prev, form);
+  } catch (e) {
+    unstable_rethrow(e);
+    console.error("[2fa-painel] falha inesperada:", e instanceof Error ? `${e.name}: ${e.message}` : e);
+    return { error: "Não foi possível entrar agora (erro interno). Tente novamente em instantes." };
+  }
 }

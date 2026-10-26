@@ -99,13 +99,11 @@ export async function saveProduct(form: FormData) {
     }
   }
 
-  let saved;
-  try {
-    saved = id ? await db.product.update({ where: { id }, data }) : await db.product.create({ data });
-  } catch (e) {
-    const msg = e instanceof Error && e.message.includes("Unique constraint") ? "Já existe um produto com este código (SKU)." : "Não foi possível salvar.";
-    backTo(path, "erro", msg);
-  }
+  const saved = await (id ? db.product.update({ where: { id }, data }) : db.product.create({ data })).catch((e: unknown) => {
+    console.error("[produto] falha ao salvar:", e instanceof Error ? e.message : e);
+    return null;
+  });
+  if (!saved) backTo(path, "erro", "Não foi possível salvar. Confira se o código (SKU) já não existe em outro produto.");
   await audit(user.id, id ? "produto_editado" : "produto_criado", "produto", saved.id,
     priceChanged ? `Preço ${formatBRL(existing!.priceCents)} → ${formatBRL(price!)}${promo != null ? ` (promo ${formatBRL(promo)})` : ""}` : d.name);
   revalidatePath("/", "layout");

@@ -1,6 +1,6 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { createSession, destroyAllSessions, destroySession, getClientIp, getCustomer } from "@/lib/session";
@@ -17,7 +17,7 @@ const safeNext = (n: FormDataEntryValue | null) => {
   return s.startsWith("/") && !s.startsWith("//") && !s.startsWith("/admin") ? s : "/conta";
 };
 
-export async function signIn(_: FormState, form: FormData): Promise<FormState> {
+async function signInImpl(_: FormState, form: FormData): Promise<FormState> {
   const ip = await getClientIp();
   const email = String(form.get("email") ?? "").trim().toLowerCase();
   const password = String(form.get("password") ?? "");
@@ -130,4 +130,15 @@ export async function requestDeletion(_: FormState, form: FormData): Promise<For
     await notifyStore("Pedido de exclusão de dados (LGPD)", ["Um cliente pediu a exclusão dos dados. Prazo de resposta: 15 dias."]);
   }
   return { ok: true, message: "Pedido registrado. Responderemos em até 15 dias por e-mail." };
+}
+
+/** Envolve o login para registrar falhas inesperadas nos logs (sem dados sensíveis). */
+export async function signIn(prev: FormState, form: FormData): Promise<FormState> {
+  try {
+    return await signInImpl(prev, form);
+  } catch (e) {
+    unstable_rethrow(e);
+    console.error("[login-cliente] falha inesperada:", e instanceof Error ? `${e.name}: ${e.message}` : e);
+    return { error: "Não foi possível entrar agora (erro interno). Tente novamente em instantes." };
+  }
 }

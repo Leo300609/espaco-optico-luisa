@@ -9,7 +9,7 @@ export function Footer() {
       <div className="conteudo py-12 grid gap-10 md:grid-cols-4">
         <div>
           <div className="flex items-center gap-3">
-            <Image src="/logo.png" alt="" width={64} height={64} className="rounded-full ring-1 ring-white/30" />
+            <Image src="/logo.jpg" alt="" width={64} height={64} className="rounded-full ring-1 ring-white/30" />
             <p className="leading-none">
               <span className="block font-serif text-lg">Espaço Óptico</span>
               <span className="block font-script text-4xl text-champanhe">Luísa</span>

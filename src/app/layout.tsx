@@ -27,9 +27,9 @@ export const metadata: Metadata = {
     type: "website",
     locale: "pt_BR",
     siteName: STORE.name,
-    images: [{ url: "/logo.png", width: 447, height: 447, alt: STORE.name }],
+    images: [{ url: "/logo.jpg", width: 256, height: 256, alt: STORE.name }],
   },
-  icons: { icon: "/logo.png", apple: "/logo.png" },
+  icons: { icon: "/logo.jpg", apple: "/logo.jpg" },
 };
 
 export const viewport: Viewport = {
