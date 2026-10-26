@@ -11,6 +11,7 @@ import { ProductGallery } from "@/components/loja/ProductGallery";
 import { BuyBox } from "@/components/loja/BuyBox";
 import { Price, ProductCard } from "@/components/loja/ProductCard";
 import { IconWhats } from "@/components/icons";
+import { appUrl } from "@/lib/app-url";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -68,7 +69,7 @@ export default async function ProdutoPage({ params }: Props) {
     orderBy: { featured: "desc" },
   });
   const parcel = installmentText(price, 6);
-  const appUrl = process.env.APP_URL ?? "";
+  const siteUrl = appUrl();
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -77,13 +78,13 @@ export default async function ProdutoPage({ params }: Props) {
     sku: p.sku,
     brand: { "@type": "Brand", name: p.brand },
     description: p.description,
-    image: p.images.map((i) => (i.url.startsWith("http") ? i.url : `${appUrl}${i.url}`)),
+    image: p.images.map((i) => (i.url.startsWith("http") ? i.url : `${siteUrl}${i.url}`)),
     offers: {
       "@type": "Offer",
       priceCurrency: "BRL",
       price: (price / 100).toFixed(2),
       availability: anyAvailable ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-      url: `${appUrl}/produto/${p.slug}`,
+      url: `${siteUrl}/produto/${p.slug}`,
       seller: { "@type": "Organization", name: STORE.name },
     },
   };

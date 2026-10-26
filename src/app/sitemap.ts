@@ -1,10 +1,11 @@
 import type { MetadataRoute } from "next";
 import { db } from "@/lib/db";
+import { appUrl } from "@/lib/app-url";
 
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = process.env.APP_URL ?? "http://localhost:3000";
+  const base = appUrl();
   const [products, categories, pages] = await Promise.all([
     db.product.findMany({ where: { status: "ATIVO", deletedAt: null }, select: { slug: true, updatedAt: true } }),
     db.category.findMany({ where: { active: true }, select: { slug: true } }),

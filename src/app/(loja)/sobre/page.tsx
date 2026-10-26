@@ -3,6 +3,7 @@ import Image from "next/image";
 import { headers } from "next/headers";
 import { STORE, fullAddress, whatsappLink } from "@/lib/site";
 import { IconClock, IconPhone, IconPin, IconWhats } from "@/components/icons";
+import { appUrl } from "@/lib/app-url";
 
 export const metadata: Metadata = {
   title: "Ótica em Suzano — conheça a loja",
@@ -12,14 +13,14 @@ export const metadata: Metadata = {
 
 export default async function SobrePage() {
   const nonce = (await headers()).get("x-nonce") ?? undefined;
-  const appUrl = process.env.APP_URL ?? "";
+  const siteUrl = appUrl();
   const a = STORE.address;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Optician",
     name: STORE.name,
-    image: `${appUrl}/logo.jpg`,
-    url: appUrl,
+    image: `${siteUrl}/logo.jpg`,
+    url: siteUrl,
     telephone: "+55-11-4759-3608",
     address: { "@type": "PostalAddress", streetAddress: a.street, addressLocality: a.city, addressRegion: a.state, postalCode: a.cep, addressCountry: "BR" },
     areaServed: ["Suzano", "Poá", "Ferraz de Vasconcelos", "Itaquaquecetuba", "Mogi das Cruzes"],

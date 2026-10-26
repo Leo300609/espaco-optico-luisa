@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Great_Vibes, Inter } from "next/font/google";
 import "./globals.css";
 import { STORE } from "@/lib/site";
+import { appUrl } from "@/lib/app-url";
 
 // Fontes servidas pelo próprio site (next/font), sem enviar dados do visitante a terceiros.
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
@@ -13,7 +14,7 @@ const cormorant = Cormorant_Garamond({
 });
 const script = Great_Vibes({ subsets: ["latin"], weight: "400", variable: "--font-script-luisa", display: "swap" });
 
-const appUrl = process.env.APP_URL ?? "http://localhost:3000";
+const appUrl = appUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),

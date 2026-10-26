@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { appUrl } from "./app-url";
 
 /**
  * Variáveis de ambiente validadas na inicialização.
@@ -33,7 +34,7 @@ let cached: Env | null = null;
 
 export function env(): Env {
   if (cached) return cached;
-  const parsed = schema.safeParse(process.env);
+  const parsed = schema.safeParse({ ...process.env, APP_URL: appUrl() });
   if (!parsed.success) {
     const missing = parsed.error.issues.map((i) => i.path.join(".")).join(", ");
     throw new Error(`Variáveis de ambiente inválidas ou ausentes: ${missing}`);
